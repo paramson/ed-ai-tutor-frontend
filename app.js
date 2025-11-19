@@ -4,7 +4,7 @@
 const md = window.markdownit({
   html: true,
   breaks: true,
-  linkify: true
+  linkify: true,
 });
 
 // -----------------------------
@@ -30,34 +30,34 @@ async function sendMessage() {
   const text = inputEl.value.trim();
   if (!text) return;
 
-  // Add user bubble
+  // Show user message
   addMessage(text, "user");
   inputEl.value = "";
 
-  // Add assistant bubble (empty for now)
+  // Assistant bubble placeholder
   let assistantDiv = addMessage("", "assistant");
 
-  // Payload to backend
   const payload = {
     message: text,
     model: "gpt-4.1",
-    engine: "default"
+    engine: "default",
   };
 
-  // Call backend API
-  const response = await fetch("https://ed-ai-tutor-backend.vercel.app/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  const response = await fetch(
+    "https://ed-ai-tutor-backend.vercel.app/api/chat",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  );
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder("utf-8");
 
-  // Buffer for streamed text
+  // Buffer for all streamed markdown
   let markdownBuffer = "";
 
-  // STREAMING LOOP
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -68,19 +68,18 @@ async function sendMessage() {
     for (const line of lines) {
       if (!line.startsWith("data:")) continue;
 
-      let token = line.replace("data:", "").trim();
+      // ⚠️ IMPORTANT: keep leading spaces/newlines
+      let token = line.slice(5); // remove "data:" only
 
-      if (token === "[END]" || token === "") continue;
+      const trimmed = token.trim();
+      if (!trimmed) continue;       // skip pure empty
+      if (trimmed === "[END]") continue;
 
-      // -----------------------------
-      // FIX: no extra space between tokens
-      // -----------------------------
+      // Append raw token (with its spaces/newlines)
       markdownBuffer += token;
 
-      // Render markdown → HTML
+      // Live render markdown → HTML
       assistantDiv.innerHTML = md.render(markdownBuffer);
-
-      // Auto scroll
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
   }
