@@ -43,8 +43,8 @@ async function sendMessage() {
     engine: engineEl.value
   };
 
-  // Call backend
-  const response = await fetch("https://ed-ai-tutor-backend-um3t.vercel.app/api/chat", {
+  // Call backend (fixed permanent backend URL)
+  const response = await fetch("https://ed-ai-tutor-backend.vercel.app/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
