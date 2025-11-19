@@ -30,17 +30,21 @@ async function sendMessage() {
   const text = inputEl.value.trim();
   if (!text) return;
 
+  // Add user bubble
   addMessage(text, "user");
   inputEl.value = "";
 
+  // Add assistant bubble (empty for now)
   let assistantDiv = addMessage("", "assistant");
 
+  // Payload to backend
   const payload = {
     message: text,
     model: "gpt-4.1",
     engine: "default"
   };
 
+  // Call backend API
   const response = await fetch("https://ed-ai-tutor-backend.vercel.app/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -50,9 +54,10 @@ async function sendMessage() {
   const reader = response.body.getReader();
   const decoder = new TextDecoder("utf-8");
 
-  // Accumulate markdown as it streams
+  // Buffer for streamed text
   let markdownBuffer = "";
 
+  // STREAMING LOOP
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -67,10 +72,15 @@ async function sendMessage() {
 
       if (token === "[END]" || token === "") continue;
 
-      markdownBuffer += token + " ";
+      // -----------------------------
+      // FIX: no extra space between tokens
+      // -----------------------------
+      markdownBuffer += token;
 
-      // Render markdown -> HTML live
+      // Render markdown → HTML
       assistantDiv.innerHTML = md.render(markdownBuffer);
+
+      // Auto scroll
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
   }
