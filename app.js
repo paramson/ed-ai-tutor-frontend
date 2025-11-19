@@ -25,13 +25,14 @@ async function sendMessage() {
   addMessage(text, "user");
   inputEl.value = "";
 
-  // Create placeholder assistant message
+  // Assistant placeholder bubble
   let assistantDiv = addMessage("", "assistant");
 
+  // Payload to backend
   const payload = {
     message: text,
-    model: "gpt-4.1",    // fixed model
-    engine: "default"    // optional
+    model: "gpt-4.1",
+    engine: "default"
   };
 
   // Call backend API
@@ -41,10 +42,10 @@ async function sendMessage() {
     body: JSON.stringify(payload)
   });
 
-  // Stream reader
   const reader = response.body.getReader();
   const decoder = new TextDecoder("utf-8");
 
+  // STREAMING LOOP
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
@@ -54,11 +55,20 @@ async function sendMessage() {
 
     for (const line of lines) {
       if (line.startsWith("data:")) {
-        const token = line.replace("data:", "").trim();
-        if (token) {
-          assistantDiv.textContent += token;
-          messagesEl.scrollTop = messagesEl.scrollHeight;
+        let token = line.replace("data:", "").trim();
+
+        // Ignore [END] marker
+        if (token === "[END]") continue;
+
+        // Handle newline
+        if (token === "\\n" || token === "" || token === "\n") {
+          assistantDiv.innerHTML += "<br>";
+          continue;
         }
+
+        // Add proper spacing between tokens
+        assistantDiv.innerHTML += token + " ";
+        messagesEl.scrollTop = messagesEl.scrollHeight;
       }
     }
   }
@@ -70,8 +80,12 @@ async function sendMessage() {
 function addMessage(text, sender) {
   const div = document.createElement("div");
   div.className = `message ${sender}`;
-  div.textContent = text;
+
+  // Allow HTML for assistant formatting
+  div.innerHTML = text;
+
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+
   return div;
 }
