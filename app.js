@@ -5,24 +5,13 @@ const sendBtn = document.getElementById("send-btn");
 const inputEl = document.getElementById("user-input");
 const messagesEl = document.getElementById("messages");
 
-// NEW controls
-const modelEl = document.getElementById("model-select");
-const engineEl = document.getElementById("engine-select");
-const guidelineBtn = document.getElementById("guideline-btn");
-const clearBtn = document.getElementById("clear-btn");
-
 // -----------------------------
 //  EVENT LISTENERS
 // -----------------------------
 sendBtn.addEventListener("click", sendMessage);
 
-guidelineBtn.addEventListener("click", () => {
-  inputEl.value = "FETCH_GUIDELINE";
-  sendMessage();
-});
-
-clearBtn.addEventListener("click", () => {
-  messagesEl.innerHTML = "";
+inputEl.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") sendMessage();
 });
 
 // -----------------------------
@@ -32,30 +21,30 @@ async function sendMessage() {
   const text = inputEl.value.trim();
   if (!text) return;
 
-  // Show user message
+  // Show user message immediately
   addMessage(text, "user");
   inputEl.value = "";
 
-  // Prepare POST payload
+  // Create placeholder assistant message
+  let assistantDiv = addMessage("", "assistant");
+
   const payload = {
     message: text,
-    model: modelEl.value,
-    engine: engineEl.value
+    model: "gpt-4.1",    // fixed model
+    engine: "default"    // optional
   };
 
-  // Call backend (fixed permanent backend URL)
+  // Call backend API
   const response = await fetch("https://ed-ai-tutor-backend.vercel.app/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   });
 
-  // Stream reader setup
+  // Stream reader
   const reader = response.body.getReader();
   const decoder = new TextDecoder("utf-8");
-  let assistantDiv = addMessage("", "assistant");
 
-  // Stream tokens
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
